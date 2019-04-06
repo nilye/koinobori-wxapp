@@ -1,0 +1,16 @@
+$breakpoints := {
+  xs: 0
+  sm: 600px
+  md: 960px
+  lg: 1280px
+  xl: 1920px
+}
+
+$media-breakpoints = {
+  xs: 'only screen and (max-width: %s)' % ($breakpoints.sm - 1),
+  sm: 'only screen and (min-width: %s) and (max-width: %s)' % ($breakpoints.sm $breakpoints.md - 1),
+  sm-and-down: 'only screen and (max-width: %s)' % ($breakpoints.md - 1),
+  md: 'only screen and (min-width: %s) and (max-width: %s)' % ($breakpoints.md $breakpoints.lg - 1),
+  lg: 'only screen and (min-width: %s) and (max-width: %s)' % ($breakpoints.lg $breakpoints.xl - 1),
+  xl: 'only screen and (min-width: %s)' % ($breakpoints.xl)
+}

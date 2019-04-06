@@ -1,0 +1,10 @@
+/* Theme */
+
+theme(builder, class)
+  for name, theme in $themes
+    .theme-{name}
+      .{class}
+        builder(theme)
+
+text-color($theme, $bg-color)
+  luminosity($bg-color) < 0.5 ? $theme.text-l : $theme.text-d

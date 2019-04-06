@@ -1,0 +1,17 @@
+$spacing-directions = a y x l r t b
+// auto margin
+for d in $spacing-directions
+  .m{d}-auto
+    m(d, auto)
+
+// margin
+for i in (0..11)
+  for d in $spacing-directions
+    .m{d}-{i}
+      m(d, i)
+
+// padding
+for i in (0..11)
+  for d in $spacing-directions
+    .p{d}-{i}
+      p(d, i)

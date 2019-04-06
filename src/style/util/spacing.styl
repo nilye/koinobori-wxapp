@@ -1,0 +1,32 @@
+/* Spacing */
+_spacing(prop, dir, level)
+  /*
+    prop: margin or padding
+    dir: direction => a y x l r t b
+    level: (0..10) actual value: 0px 8px 16 24 32 40 48 64 80 96 120 160
+  */
+  levels = 0 1 2 3 4 5 6 8 10 12 15 20
+  space = level == auto ? auto : $spacer*levels[level]
+  if dir == a
+    {prop}: space
+  else if dir == x
+    {prop}-left: space
+    {prop}-right: space
+  else if dir == y
+    {prop}-top: space
+    {prop}-bottom: space
+  else if dir == l
+    {prop}-left: space
+  else if dir == r
+    {prop}-right: space
+  else if dir == t
+    {prop}-top: space
+  else if dir == b
+    {prop}-bottom: space
+
+
+m(dir, level)
+  _spacing(margin, dir, level)
+
+p(dir, level)
+  _spacing(padding, dir, level)
