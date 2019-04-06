@@ -14,16 +14,17 @@ module.exports = {
   },
   resolve: {
     alias: {
-      counter: path.join(__dirname, 'src/components/counter'),
       '@': path.join(__dirname, 'src')
     },
     aliasFields: ['wepy', 'weapp'],
     modules: ['node_modules']
   },
+  ignore:[
+    'src/style/*'
+  ],
   compilers: {
     stylus: {
-      compress: true,
-      includeCSS: true
+      compress: true
     },
     babel: {
       sourceMap: true,
@@ -48,7 +49,7 @@ module.exports = {
 if (prod) {
 
   // 压缩sass
-  // module.exports.compilers['sass'] = {outputStyle: 'compressed'}
+  module.exports.compilers['stylus'] = {compress: true}
 
   // 压缩js
   module.exports.plugins = {
