@@ -1,0 +1,122 @@
+<template>
+  <view wx:if="{{ticket}}" class="tkt-card d-flex column ma-2">
+    <view class="tkt-card-info pa-3">
+      <view class="d-flex justify-space-between align-flex-start">
+        <view>
+          <repeat for="{{ticket.items}}" key="index" index="index" item="item">
+            <view class="b">{{store.ticketsType[item.type]['name']}} ✕ {{item.qty}} 张</view>
+          </repeat>
+        </view>
+        <view wx:if="source=='wxpay'">
+          ({{ppl}}人) ￥{{ticket.fee/100}}
+        </view>
+      </view>
+      <text>出票时间：{{ticket.createdTime}}</text>
+      <text>手机：{{ticket.phone}}</text>
+    </view>
+    <view class="tkt-card-rip">
+      <view class="tkt-card-rip-line"></view>
+    </view>
+    <view class="tkt-card-qrcode pa-3 d-flex column align-center">
+      <text class="tkt-code pa-1">{{ticket.code}}</text>
+      <view style="position:relative">
+        <image class="qr-code mb-6 mt-1 {{ticket.checked ? 'disabled':''}}" src="{{QrCodeFilePath}}" mode="aspectFit"></image>
+        <view wx:if="{{ticket.checked}}" class="checked-badge">已完成</view>
+      </view>
+    </view>
+  </view>
+  <canvas canvas-id="QRcode" class="qr-code-canvas"></canvas>
+  <text class="text-center">订单号：{{ticket.orderNo}}</text>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import drawQrcode from 'weapp-qrcode'
+  import store from '../../mixins/store'
+  import io from 'weapp.socket.io'
+  let socket = io('https://api.koinobori.design')
+
+  export default class TicketShow extends wepy.page {
+    mixins = [store]
+	  data = {
+	    ticket:null,
+      index:null,
+      QrCodeFilePath:''
+	  }
+	  onLoad(query){
+	    this.index = query.index
+      // get data
+      if (!this.index){
+        wepy.navigateBack({delta:1})
+      }
+      this.ticket = this.store.ticketsPool[this.index]
+      this.$parent.$pages['/pages/ticket'].tab = 0
+      this.drawQrCode()
+      this.connectSocket()
+    }
+    computed = {
+      ppl(){
+        let p = 0
+        if (this.ticket){
+          for (let i of this.ticket.items){
+            p += this.store.ticketsType[i.type]['ppl'] * i.qty
+          }
+        }
+        return p
+      }
+    }
+
+    drawQrCode(){
+/*	    安卓上显示问题， 所以使用promise + setTimeout
+      https://github.com/yingye/weapp-qrcode/issues/18*/
+      let that = this
+      new Promise((resolve, reject)=>{
+        drawQrcode({
+          width:200,
+          height:200,
+          canvasId: 'QRcode',
+          text: this.ticket.code,
+          _this: that,
+          callback: ()=>{
+            setTimeout(() => {
+              wx.canvasToTempFilePath({
+                canvasId: 'QRcode',
+                success: res => {
+                  resolve(res['tempFilePath'])
+                }
+              }, that)
+            }, 100)
+          }
+        })
+      }).then(res=>{
+        this.QrCodeFilePath = res
+        console.log(this.QrCodeFilePath)
+        this.$apply()
+      })
+    }
+    connectSocket(){
+      let that = this
+      socket = io('https://api.koinobori.design')
+      socket.on('connect', function(){
+        console.log('io - connect to ', that.ticket.code)
+        socket.emit('channel', that.ticket.code)
+      })
+      socket.on('checked-in', function (data) {
+        console.log('io - checkin msg', data)
+        that.ticket.checked = true
+        that.ticket.checkedTime = new Date()
+        that.$apply()
+        wepy.showToast({
+          title:'使用成功',
+          icon:'success',
+          duration: 2000
+        })
+      })
+    }
+    onUnload(){
+      console.log('io - disconnected')
+      socket.disconnect()
+    }
+	}
+</script>at
+

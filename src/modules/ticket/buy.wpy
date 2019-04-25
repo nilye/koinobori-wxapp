@@ -1,0 +1,179 @@
+<template>
+  <view class="card bg-white mt-2">
+    <main-cart-item  :value.sync="first"></main-cart-item>
+    <sec-cart-item wx:if="{{expand}}" :value.sync="sec"></sec-cart-item>
+    <third-cart-item wx:if="{{expand}}" :value.sync="third"></third-cart-item>
+    <!--expand button-->
+    <view wx:else class="ticket-buy-item" @tap="expandItems">
+      <text class="c-acc">+ 增加其他票种</text>
+    </view>
+    <!--coupons-->
+    <view wx:if="{{couponToUse}}" class="ticket-buy-item justify-space-between">
+      <text>抵用券（{{couponToUse.name}}）</text>
+      <text class="sub-total">-￥{{couponToUse.discount}}</text>
+    </view>
+    <!--subtotal-->
+    <view class="ticket-buy-item justify-space-between">
+      <text>小计</text>
+      <text class="sub-total">({{ppl}}人份) ￥{{subTotal}}</text>
+    </view>
+  </view>
+  <!--phone-->
+  <view class="ticket-buy-item input-wrap flex-x-center mt-2">
+    <text class="mr-2" :class="{warn: !phone}">手机*</text>
+    <input placeholder="必填" bindinput="bindPhoneInput" type="number" maxlength="11"/>
+  </view>
+  <text class="hint">购买后门票将绑定手机号</text>
+  <!--button-->
+  <button class="ticket-buy-pay" open-type="getUserInfo"
+          bindgetuserinfo="buy"
+          disabled="{{subTotal===0 || !phoneIsValid}}">
+    确认支付 ￥{{subTotal}}
+  </button>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import CartItem from './components/cartItem'
+  import http from '../../util/http'
+  import filter from '../../util/filter'
+  import store from '../../mixins/store'
+
+  export default class TicketBuy extends wepy.page {
+    mixins = [store]
+    components = {
+      'main-cart-item': CartItem,
+      'sec-cart-item': CartItem,
+      'third-cart-item': CartItem,
+    }
+    data = {
+      first:null,
+      sec:null,
+      third:null,
+      expand: false,
+      phone:'',
+      couponToUse:null,
+      couponToUseIndex:null,
+      processing:false
+    }
+    onLoad(query){
+      let type = query.type
+      console.log(this.store)
+      this.first = {item:this.store.ticketsType[type], qty:1}
+      this.availableCoupon()
+    }
+    methods = {
+      bindPhoneInput(e){
+        this.phone = e.detail.value
+      },
+      expandItems(){
+        let otherTypes = []
+        let keys = Object.keys(this.store.ticketsType)
+        for(let i of keys){
+          if (this.store.ticketsType[i].type !== this.first.item.type){
+            otherTypes.push(this.store.ticketsType[i])
+          }
+        }
+        this.sec = {item: otherTypes[0], qty:0}
+        this.third = {item: otherTypes[1], qty:0}
+        this.expand = true
+      },
+      buy(e){
+        console.log(e)
+        let tickets = []
+        for (let i of [this.first, this.sec, this.third]){
+          if (i && i.qty) tickets.push({type: i.item.type, qty:i.qty})
+        }
+        const body = {
+          fee: this.subTotal*100,
+          items: tickets,
+          openid: this.store.openid,
+          userInfo: e.detail.userInfo,
+          phone: this.phone,
+          coupon: this.couponToUse ? this.couponToUse.code : null
+        }
+        http('POST', '/wxpay/order', body, true)
+        .then(({orderNo, payParams})=>{
+          return new Promise((resolve, reject)=>{
+            wepy.requestPayment({
+              timeStamp: String(payParams.timeStamp),
+              nonceStr: payParams.nonceStr,
+              package: payParams.package,
+              signType: 'MD5',
+              paySign: payParams.paySign,
+              success(res){
+                console.log(res, payParams)
+                resolve({orderNo, payParams})
+              },
+              fail(err){reject(err)}
+            })
+          })
+        }).then(({orderNo, payParams})=>{
+          // cleanup coupon
+          let newCoupons = this.store.coupons
+          if (this.couponToUse && this.couponToUseIndex > -1){
+            newCoupons[this.couponToUseIndex]['used'] = true
+            console.log(newCoupons)
+            this.setStore('coupons', newCoupons)
+            wepy.setStorageSync('coupons', newCoupons)
+          }
+          // issue ticket
+          return http('POST', '/ticket/issue/wxpay', {
+            orderNo: orderNo,
+            paySign: payParams.paySign,
+            openid: body.openid
+          }, true)
+        }).then(ticket=>{
+          // map tickets and unshift to ticketsPool
+          console.log(ticket)
+          ticket.items = ticket.items.map((i) => {
+            i['detail'] = this.store.ticketsType[i.type]
+            return i
+          })
+          ticket.createdTime = filter.formatDate(ticket.createdTime)
+          this.$parent.globalData.ticketsPool.unshift(ticket)
+          this.$apply()
+          wepy.redirectTo({url:'show?index=0'})
+        }).catch(err=>{
+          console.log(err)
+        })
+      }
+    }
+    computed = {
+      store: ()=> this.$parent.globalData,
+      subTotal(){
+        let t = 0
+        for(let i of [this.first, this.sec, this.third]){
+          if (i && i.hasOwnProperty('qty')){
+            t += (i.qty * i.item.price)
+          }
+        }
+        if (this.couponToUse){
+          t -= this.couponToUse['discount']
+        }
+        return t
+      },
+      ppl(){
+        let p = 0
+        for (let i of [this.first, this.sec, this.third]){
+          if (i && i.hasOwnProperty('qty')) {
+            p += i.item.ppl * i.qty
+          }
+        }
+        return p
+      },
+      phoneIsValid(){
+        return this.phone.length === 11 && this.phone.slice(0, 1) === '1'
+      }
+    }
+    availableCoupon(){
+      for (let c in this.store.coupons){
+        if (!this.store.coupons[c]['used']){
+          this.couponToUseIndex = c
+          this.couponToUse = this.store.coupons[c]
+          break;
+        }
+      }
+    }
+  }
+</script>

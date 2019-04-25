@@ -1,0 +1,38 @@
+<template>
+  <view class="ticket-buy-item input-wrap flex-x-center mt-2">
+    <text class="mr-2">手机</text>
+    <input bindinput="bindPhoneInput" type="number" maxlength="11"/>
+  </view>
+  <!--button-->
+  <button class="ticket-buy-pay" open-type="getUserInfo"
+          bindgetuserinfo="exchange"
+          disabled="{{!phoneIsValid}}">
+    兑换
+  </button>
+</template>
+
+<script>
+  import wepy from 'wepy'
+
+  export default class TicketExchange extends wepy.page {
+    config = {
+      navigationBarTitleText: '兑换门票'
+    }
+    data = {
+      phone:''
+    }
+    methods = {
+      bindPhoneInput(e){
+        this.phone = e.detail.value
+      },
+      exchange(e){
+        console.log(e.detail.userInfo)
+      }
+    }
+    computed = {
+      phoneIsValid(){
+        return this.phone.length === 11 && this.phone.slice(0, 1) === '1'
+      }
+    }
+  }
+</script>

@@ -7,7 +7,7 @@ module.exports = {
   cliLogs: !prod,
   build: {
     web: {
-      htmlTemplate: path.join('src', 'index.template.html'),
+      // htmlTemplate: path.join('src', 'index.template.html'),
       htmlOutput: path.join('web', 'index.html'),
       jsOutput: path.join('web', 'index.js')
     }
@@ -20,7 +20,7 @@ module.exports = {
     modules: ['node_modules']
   },
   ignore:[
-    'src/style/*'
+    'src/style/*',
   ],
   compilers: {
     stylus: {
@@ -62,10 +62,10 @@ if (prod) {
       filter: /\.(jpg|png|jpeg)$/,
       config: {
         jpg: {
-          quality: 80
+          quality: 75
         },
         png: {
-          quality: 80
+          quality: 75
         }
       }
     }

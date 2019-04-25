@@ -1,0 +1,50 @@
+page
+  background: #f6f6f6
+
+.warn
+  color: red
+
+.acc
+  color: $theme.acc
+
+.ok
+  color: green
+
+text
+  color: $theme.text-d
+  font-size: 14px
+  display block
+  m(y, 1)
+
+  &.h1
+    font-size 28px
+    font-weight bolder
+    m(y, 2)
+
+  &.h2
+    font-size 21px
+    font-weight bolder
+    m(y, 2)
+
+.icon
+  height 24px
+  width 24px
+  opacity 0.8
+
+view.card
+  background #fff
+  p(l, 2)
+
+.input-wrap
+  background #fff
+  height 40px
+  p(y, 1)
+  p(x, 2)
+  font-size: 14px
+  input
+    flex:1
+  & + .hint
+    font-size: 12px
+    p(x, 2)
+    opacity: 0.7
+

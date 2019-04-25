@@ -1,0 +1,119 @@
+<template>
+  <view class="tabs">
+    <view class="tab {{tab==0?'active':''}}" @tap="clickTab"  data-index="0">我的门票</view>
+    <view class="tab {{tab==1?'active':''}}" @tap="clickTab"  data-index="1">购票</view>
+  </view>
+
+  <view>
+    <!--my tickets-->
+    <view style="display: {{tab==0?'block':'none'}}" class="pb-2">
+      <repeat for="{{tktPool}}" key="index" index="index" item="ticket">
+        <navigator url="../modules/ticket/show?index={{index}}"
+                   class="ticket-list-item mt-2 pa-2 d-flex">
+          <image class="ticket-tn mr-2" src="{{ticket.items[0].detail.img}}" mode="aspectFill"></image>
+          <view class="flex-fill">
+            <repeat for="{{ticket.items}}" key="{{item.key}}" item="item">
+              <text class="b">{{item.detail.name}} ✕ {{item.qty}} 张</text>
+            </repeat>
+            <text wx:if="{{ticket.fee}}" class="d-block">￥{{ticket.fee/100}}</text>
+            <text wx:if="{{!ticket.checked}}" class="text-sm d-block">有效期至7月12日</text>
+          </view>
+          <text class="acc" wx:if="{{ticket.checked}}">已结束</text>
+          <text class="ok" wx:else>可使用</text>
+        </navigator>
+      </repeat>
+    </view>
+    <!--buy tickets-->
+    <view style="display: {{tab==1?'block':'none'}}">
+      <view class="px-2">
+        <text class="h2">选择购买票种</text>
+        <view class="ticket-select">
+          <repeat for="{{store.ticketsType}}" key="index" index="index" item="item">
+            <navigator url="../modules/ticket/buy?type={{item.type}}"
+                       class="ticket-select-card mb-2 flex-x-center">
+              <image class="ticket-tn" src="{{item.img}}" mode="aspectFill"></image>
+              <text class="title ml-2">{{item.name}}</text>
+              <view class="flex-fill"></view>
+              <text class="price mr-2">{{item.price}}</text>
+            </navigator>
+          </repeat>
+          <navigator url="../modules/ticket/exchange">
+            <button class="btn outline block mt-3">兑换门票</button>
+          </navigator>
+        </view>
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import http from '../util/http'
+  import filter from '../util/filter'
+  import store from '../mixins/store'
+
+  export default class Ticket extends wepy.page {
+    mixins = [store]
+    config = {
+      navigationBarTitleText: '门票',
+      enablePullDownRefresh: true,
+    }
+    data = {
+      tktPool:[],
+      tab:0,
+      isLoading:false,
+    }
+    onLoad(){
+      this.getTicketsList(true)
+    }
+    onShow(){
+      if (!this.isLoading){
+        this.getTicketsList(false)
+      }
+    }
+    watch = {
+      tktPool(v){
+        if (v.length === 0){
+          wepy.setNavigationBarTitle({title:'购票'})
+        }
+      }
+    }
+    methods = {
+      clickTab(e){
+        this.tab = parseInt(e.target.dataset.index)
+        this.$apply()
+      },
+      exchangeTicket(){
+        // wepy.navigateTo({url:'ticket/show?index=0'})
+      }
+    }
+    onPullDownRefresh() {
+      this.getTicketsList()
+    }
+    getTicketsList(loading){
+      this.isLoading = true
+      http('GET', '/ticket/list', {
+        openid: this.store.openid
+      }, loading).then(res=> {
+        let data = res
+        for (let t of data) {
+          t.items = t.items.map((i) => {
+            i['detail'] = this.store.ticketsType[i.type]
+            return i
+          })
+          t.createdTime = filter.formatDate(t.createdTime)
+        }
+        this.$parent.globalData['ticketsPool'] = data
+        this.tktPool = data
+        if (data.length === 0){
+          this.tab = 1
+        }
+        this.$apply()
+        wepy.stopPullDownRefresh()
+        this.isLoading = false
+      })
+    }
+
+
+  }
+</script>

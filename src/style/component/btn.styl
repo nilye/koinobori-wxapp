@@ -1,3 +1,14 @@
+button
+  outline:none
+  &::after
+    border:none
+
+
+  &[disabled]:not([type])
+  &[disabled]
+    color:rgba(0, 0, 0, 0.3);
+    background-color:#ddd;
+
 .btn
   no-select()
   outline none
@@ -9,7 +20,13 @@
   position relative
   text-decoration none
   font-weight bolder
-  br-pill()
+  br(4px)
   p(x, 3)
   height 48px
-  font-size 24px
+  color: $theme.text-d
+
+  &.outline
+    border:1px solid $theme.pri
+
+  &.block
+    display block !important

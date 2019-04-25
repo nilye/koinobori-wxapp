@@ -1,0 +1,27 @@
+<template>
+  <view class="article">
+    <image src="../../assets/img/0/header.jpg" mode="widthFix"></image>
+    <rich-text nodes="{{richText}}"></rich-text>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import Contents from '../../article/content'
+
+  export default class Article extends wepy.page {
+    data = {
+      id:null,
+      richText:''
+    }
+    onLoad(query){
+      this.richText = this.styleRichText(Contents)
+      console.log(this.richText)
+    }
+
+    styleRichText(content){
+      return content
+    }
+
+  }
+</script>

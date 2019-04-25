@@ -1,0 +1,38 @@
+<template>
+  <view class="ticket-buy-item">
+    <text>{{value.item.name}}</text>
+    <text class="ml-2">￥{{value.item.price}}</text>
+    <view class="flex-fill"></view>
+    <view class="flex-x-center">
+      <button class="counter-minus" @tap="tap({{-1}})">-</button>
+      <text class="counter-number">{{value.qty}}</text>
+      <button class="counter-add" @tap="tap({{1}})">+</button>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy';
+
+  export default class CartItem extends wepy.component {
+    props = {
+      value: {
+        type: Object,
+        default:null,
+        twoWay: true
+      }
+    }
+    onLoad(){
+
+    }
+    methods = {
+      tap(val){
+        let newVal = this.value.qty + val
+        if (newVal >= 0 && newVal < 100){
+          this.value.qty = newVal
+        }
+        this.$emit('change', this.value.qty)
+      }
+    }
+  }
+</script>

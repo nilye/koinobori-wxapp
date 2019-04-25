@@ -5,23 +5,73 @@
 <script>
 import wepy from 'wepy'
 import 'wepy-async-function'
-
+import http from './util/http'
 
 export default class extends wepy.app {
   config = {
     pages: [
-      'pages/index'
+      'pages/index',
+      'pages/ticket',
     ],
+    tabBar: {
+      selectedColor:'#FED421',
+      list:[{
+        pagePath:'pages/index',
+        text:'首页',
+        iconPath:'assets/icon/home.png',
+        selectedIconPath:'assets/icon/home-01.png'
+      },{
+        pagePath:'pages/ticket',
+        text:'门票',
+        iconPath:'assets/icon/ticket.png',
+        selectedIconPath:'assets/icon/ticket-01.png'
+      }]
+    },
     window: {
-      backgroundTextStyle: 'light',
-      navigationBarBackgroundColor: '#fff',
-      navigationBarTitleText: 'WeChat',
-      navigationBarTextStyle: 'black'
-    }
+      navigationBarBackgroundColor: '#FFD907',
+      navigationBarTitleText: '旗遇小卖部',
+      navigationBarTextStyle: 'black',
+      backgroundTextStyle: 'dark',
+      backgroundColor:'#fff',
+      backgroundColorTop:'#fff',
+      backgroundColorBottom:'#fff',
+    },
+    subPackages:[{
+      root:'modules/ticket',
+      pages: ['buy', 'show', 'exchange']
+    },{
+      root:'modules/article',
+      pages: ['article']
+    }],
   }
 
   globalData = {
-    userInfo: null
+    openid: null,
+    coupons:[],
+    ticketsPool:[],
+    ticketsType: {
+      1: {
+        type: 1,
+        img: '../assets/img/tickets/1.png',
+        name: '童趣单人票',
+        ppl:1,
+        price: 68
+      },
+      2: {
+        type: 2,
+        img: '../assets/img/tickets/2.png',
+        name: '亲子双人票',
+        ppl:2,
+        price: 98
+      },
+      3: {
+        type: 3,
+        img: '../assets/img/tickets/3.png',
+        name: '家庭三人票',
+        ppl:3,
+        price: 138
+      }
+    }
   }
 
   constructor () {
@@ -30,33 +80,48 @@ export default class extends wepy.app {
   }
 
   onLaunch() {
-    this.testAsync()
+    this.login()
   }
 
-  sleep (s) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        resolve('promise resolved')
-      }, s * 1000)
-    })
-  }
-
-  async testAsync () {
-    const data = await this.sleep(3)
-    console.log(data)
-  }
-
-  getUserInfo(cb) {
-    const that = this
-    if (this.globalData.userInfo) {
-      return this.globalData.userInfo
-    }
-    wepy.getUserInfo({
-      success (res) {
-        that.globalData.userInfo = res.userInfo
-        cb && cb(res.userInfo)
+/*  watch(key, cb){
+    let that = this
+    Object.defineProperty(this.globalData, key, {
+      configurable: true,
+      enumerable: true,
+      set: function (value) {
+        this.key = value
+        that.globalData[key] = value
+        console.log('global data set' + key)
+        cb(value)
+      },
+      get:function () {
+        return this.key
       }
     })
+  }*/
+
+  login() {
+    let that = this
+    this.globalData.openid = wepy.getStorageSync('openid') || null
+    new Promise((resolve, reject)=>{
+      if (!this.globalData.openid){
+        wepy.login({
+          success(res){
+            if (res.code){
+              http('GET', '/login/user', {code:res.code}, false)
+                .then(res=>{
+                that.globalData['openid'] = res
+                wepy.setStorageSync('openid', res)
+                resolve(res)
+              }).catch(err=> reject(err))
+            }
+          }
+        })
+      } else {
+        resolve(that.globalData.openid)
+      }
+    }).then(openid=>{
+    }).catch(err=> {})
   }
 }
 </script>

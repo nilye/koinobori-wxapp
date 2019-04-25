@@ -1,0 +1,74 @@
+image.ticket-tn
+  height 88px
+  width 88px
+  background: $theme.pri
+
+.ticket-select
+  &-card
+    height 88px
+    display flex
+    br(8px)
+    overflow hidden
+    background: #fff
+    //shadow(1)
+
+    .title
+      font-size: 18px
+      font-weight bolder
+
+    .price
+      font-size: 32px
+      font-weight bolder
+      &:before
+        content: '￥'
+        font-size: 14px
+
+.ticket-list-item
+  background #fff
+
+
+.ticket-buy
+  &-item
+    p(y, 1)
+    p(r, 2)
+    height:40px
+    display:flex
+    align-items:center
+    font-size 14px
+
+    .sub-total
+      color: $theme.acc
+      font-size:20px
+      font-weight bolder
+
+    & + .ticket-buy-item
+      border-top: $border
+
+    .counter-number
+      width: 32px
+      text-align: center
+      m(x, 1)
+
+    button
+      height 32px
+      width 32px
+      br(50%)
+      display inline-flex
+      align-items center
+      justify-content center
+      &.counter-minus
+        background: $theme.pale
+      &.counter-add
+        background: $theme.pri
+        color: #fff
+
+  &-pay
+    position fixed
+    bottom 0
+    width 100vw
+    height 72px
+    background: $theme.pri
+    text-align center
+    line-height:72px
+    font-weight:bolder
+    br(0)

@@ -1,11 +1,90 @@
 <template>
   <view>
-    <text>testSS</text>
+    <swiper
+      class="home-swiper"
+      indicator-dots="{{true}}"
+      indicator-color="rgba(0, 0, 0, .1)"
+      indicator-active-color="#ffffff"
+      autoplay="{{true}}"
+      interval="{{5000}}"
+      duration="{{200}}"
+    >
+      <repeat for="{{images}}" key="index" index="index" item="item">
+        <swiper-item>
+          <image src="{{item.img}}" mode="aspectFill"
+                 @tap="swiperClick({{item.url}})"></image>
+        </swiper-item>
+      </repeat>
+    </swiper>
+  </view>
+  <view class="ma-2">
+    <text class="h1">悠仔悠崽之虫虫城市日记</text>
+    <text>明星独角仙、300只活体昆虫、近千珍贵标本，共4大沉浸主题的《虫虫城市日记》快闪展，让我们“虫”逢童年，不仅能与网红独角仙悠仔悠崽一起拍照， 还能欣赏珍贵标本、上自然课堂、触抚可爱的小动物，参与丰富昆虫主题互动，孩子和家长都能乐在其中！</text>
+    <text>地址：南京河西金鹰天地</text>
+    <text>2019年5月1日-2019年7月12日 10:00-22:00</text>
   </view>
 </template>
 
 <script>
-  export default class Index extends wepy.page {
+  import wepy from 'wepy'
+  import http from '../util/http'
+  import store from '../mixins/store'
 
+  export default class Index extends wepy.page {
+    mixins = [store]
+    data = {
+      images:[{
+        img: '../assets/img/splash/0.png',
+        url: 'article?id=0'
+      },{
+        img: '../assets/img/splash/1.png',
+        url: 'article?id=1'
+      },{
+        img: '../assets/img/splash/2.jpeg',
+        url: 'article?id=2'
+      }]
+    }
+    onLoad(query){
+      this.coupon(query)
+    }
+    methods = {
+      swiperClick(url){
+        wepy.navigateTo({url: '../modules/article/'+url})
+      }
+    }
+    async coupon(query){
+      let scannedCoupon = query['coupon'],
+        coupons = wepy.getStorageSync('coupons') || [];
+      if (scannedCoupon){
+        // load storage and add to globalData
+          let codesMap = coupons.map((i)=>{
+            if (i && i.code) return i.code
+          }), newCoupon;
+        // if coupon is included , unshift to front
+        let scannedCouponIndex = codesMap.indexOf(scannedCoupon)
+        if (scannedCouponIndex !== -1){
+          newCoupon = coupons[scannedCouponIndex]
+          coupons.splice(scannedCoupon, 1)
+          wepy.showModal({
+            content:`你已经领取过了"${newCoupon.name}"的抵用券`,
+            showCancel: false
+          })
+        // else verify it and unshift to font
+        } else {
+          try {
+            newCoupon = await http('GET','/coupon/verify', {code: scannedCoupon})
+            wepy.showModal({
+              title:`${newCoupon.discount}元抵用券`,
+              content:`获得来自"${newCoupon .name}"的${newCoupon.discount}元抵用券!`,
+              showCancel: false
+            })
+          } catch (err){console.log(err)}
+        }
+        coupons.unshift(newCoupon)
+      }
+      // save all changes
+      this.setStore('coupons', coupons)
+      wepy.setStorageSync('coupons', coupons)
+    }
   }
 </script>
