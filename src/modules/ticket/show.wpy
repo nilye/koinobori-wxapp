@@ -1,15 +1,12 @@
 <template>
+  <text class="text-center ma-2">入场时请出示此页面</text>
   <view wx:if="{{ticket}}" class="tkt-card d-flex column ma-2">
     <view class="tkt-card-info pa-3">
       <view class="d-flex justify-space-between align-flex-start">
         <view>
-          <repeat for="{{ticket.items}}" key="index" index="index" item="item">
-            <view class="b">{{store.ticketsType[item.type]['name']}} ✕ {{item.qty}} 张</view>
-          </repeat>
+          <view class="b">{{ticket.items.detail['name']}} - 1 张</view>
         </view>
-        <view wx:if="source=='wxpay'">
-          ({{ppl}}人) ￥{{ticket.fee/100}}
-        </view>
+        <view wx:if="source=='wxpay'">({{ppl}}人)</view>
       </view>
       <text>出票时间：{{ticket.createdTime}}</text>
       <text>手机：{{ticket.phone}}</text>
@@ -20,13 +17,14 @@
     <view class="tkt-card-qrcode pa-3 d-flex column align-center">
       <text class="tkt-code pa-1">{{ticket.code}}</text>
       <view style="position:relative">
-        <image class="qr-code mb-6 mt-1 {{ticket.checked ? 'disabled':''}}" src="{{QrCodeFilePath}}" mode="aspectFit"></image>
+        <image class="qr-code mb-1 mt-1 {{ticket.checked ? 'disabled':''}}" src="{{QrCodeFilePath}}" mode="aspectFit"></image>
         <view wx:if="{{ticket.checked}}" class="checked-badge">已完成</view>
       </view>
+      <text class="hint mb-4" style="opacity: 0.6">可将二维码截屏后发给他人</text>
     </view>
   </view>
   <canvas canvas-id="QRcode" class="qr-code-canvas"></canvas>
-  <text class="text-center">订单号：{{ticket.orderNo}}</text>
+  <text class="text-center mb-3" wx:if="{{ticket.orderNo}}">订单号：{{ticket.orderNo}}</text>
 </template>
 
 <script>
@@ -57,10 +55,8 @@
     computed = {
       ppl(){
         let p = 0
-        if (this.ticket){
-          for (let i of this.ticket.items){
-            p += this.store.ticketsType[i.type]['ppl'] * i.qty
-          }
+        if (this.ticket && this.ticket.items){
+          p = this.ticket.items.detail.ppl
         }
         return p
       }

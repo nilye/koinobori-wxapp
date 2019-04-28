@@ -1,32 +1,61 @@
 <template>
   <view class="ticket-buy-item input-wrap flex-x-center mt-2">
-    <text class="mr-2">手机</text>
-    <input bindinput="bindPhoneInput" type="number" maxlength="11"/>
+    <text>手机号码:</text>
+    <input class="px-1" bindinput="bindPhoneInput" type="number" maxlength="11"/>
+    <button disabled="{{!phoneIsValid}}"
+            open-type="getUserInfo"
+            class="btn pri"
+            style="height:36px"
+            bindgetuserinfo="exchange">兑换</button>
   </view>
-  <!--button-->
-  <button class="ticket-buy-pay" open-type="getUserInfo"
-          bindgetuserinfo="exchange"
-          disabled="{{!phoneIsValid}}">
-    兑换
-  </button>
+  <text wx:if="{{empty}}" class="text-center">你暂时没有可兑换的门票~</text>
 </template>
 
 <script>
   import wepy from 'wepy'
+  import http from '../../util/http'
+  import filter from '../../util/filter'
+  import store from '../../mixins/store'
 
   export default class TicketExchange extends wepy.page {
+    mixins = [store]
     config = {
       navigationBarTitleText: '兑换门票'
     }
     data = {
-      phone:''
+      phone:'',
+      empty:false
     }
     methods = {
       bindPhoneInput(e){
         this.phone = e.detail.value
       },
       exchange(e){
-        console.log(e.detail.userInfo)
+        const body = {
+          openid: this.store.openid,
+          userInfo: e.detail.userInfo,
+          phone: this.phone,
+        }
+        console.log(this)
+        http('POST', '/giveaway/phone', body, true).then(res=>{
+          // if no data
+          console.log(res)
+          if (res.length === 0){
+            this.empty = true
+            this.$apply()
+          } else {
+            this.empty = false
+            // map tickets and unshift to ticketsPool
+            for (let t of res){
+              t.items['detail'] = this.store.ticketsType[t.items.type]
+              t.createdTime = filter.formatDate(t.createdTime)
+              this.$parent.globalData.ticketsPool.unshift(t)
+            }
+            this.$apply()
+            this.$parent.$pages['/pages/ticket'].tab = 0
+            wepy.navigateBack({delta:1})
+          }
+        })
       }
     }
     computed = {

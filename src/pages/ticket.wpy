@@ -7,14 +7,13 @@
   <view>
     <!--my tickets-->
     <view style="display: {{tab==0?'block':'none'}}" class="pb-2">
+      <text wx:if="{{fetched && tktPool.length == 0}}" class="text-center">你还没有门票~</text>
       <repeat for="{{tktPool}}" key="index" index="index" item="ticket">
         <navigator url="../modules/ticket/show?index={{index}}"
                    class="ticket-list-item mt-2 pa-2 d-flex">
-          <image class="ticket-tn mr-2" src="{{ticket.items[0].detail.img}}" mode="aspectFill"></image>
+          <image class="ticket-tn mr-2" src="{{ ticket.items.detail.img }}" mode="aspectFill"></image>
           <view class="flex-fill">
-            <repeat for="{{ticket.items}}" key="{{item.key}}" item="item">
-              <text class="b">{{item.detail.name}} ✕ {{item.qty}} 张</text>
-            </repeat>
+            <text class="b">{{ ticket.items.detail.name}} - 1 张</text>
             <text wx:if="{{ticket.fee}}" class="d-block">￥{{ticket.fee/100}}</text>
             <text wx:if="{{!ticket.checked}}" class="text-sm d-block">有效期至7月12日</text>
           </view>
@@ -52,6 +51,7 @@
   import filter from '../util/filter'
   import store from '../mixins/store'
 
+
   export default class Ticket extends wepy.page {
     mixins = [store]
     config = {
@@ -62,14 +62,14 @@
       tktPool:[],
       tab:0,
       isLoading:false,
+      fetched:false
     }
-    onLoad(){
-      this.getTicketsList(true)
-    }
-    onShow(){
-      if (!this.isLoading){
-        this.getTicketsList(false)
+    onLoad(query){
+      if (query['coupon']){
+        this.tab = 1
+        this.coupon(query)
       }
+      this.getTicketsList(true)
     }
     watch = {
       tktPool(v){
@@ -97,11 +97,16 @@
       }, loading).then(res=> {
         let data = res
         for (let t of data) {
-          t.items = t.items.map((i) => {
-            i['detail'] = this.store.ticketsType[i.type]
-            return i
-          })
+          if (Array.isArray(t.items)){
+            t.items = t.items.map((i) => {
+              i['detail'] = this.store.ticketsType[i.type]
+              return i
+            })
+          } else if (typeof t.items === 'object') {
+            t.items['detail'] = this.store.ticketsType[t.items.type]
+          }
           t.createdTime = filter.formatDate(t.createdTime)
+          this.fetched = true
         }
         this.$parent.globalData['ticketsPool'] = data
         this.tktPool = data
@@ -112,6 +117,48 @@
         wepy.stopPullDownRefresh()
         this.isLoading = false
       })
+    }
+
+    async coupon(query){
+      let scannedCoupon = query['coupon'],
+        couponStorage = wepy.getStorageSync('coupons') || [];
+      if (scannedCoupon){
+        // load storage and add to globalData
+        let codesMap = couponStorage.map((i)=>{
+          if (i && i.code) return i.code
+        }), newCoupon;
+        // if coupon is included
+        let scannedCouponIndex = codesMap.indexOf(scannedCoupon)
+        if (scannedCouponIndex !== -1){
+          newCoupon = couponStorage[scannedCouponIndex]
+          couponStorage.splice(scannedCouponIndex, 1)
+          // modal
+          if (newCoupon['discount'] !== 0){
+            wepy.showModal({
+              content:`你已经领取过了"${newCoupon.name}"的抵用券`,
+              showCancel: false
+            })
+          }
+          // else verify it and unshift to font
+        } else {
+          try {
+            newCoupon = await http('GET','/coupon/verify', {code: scannedCoupon})
+            // modal
+            if (newCoupon['discount'] !== 0) {
+              wepy.showModal({
+                title: `${newCoupon.discount}元抵用券`,
+                content: `获得来自"${newCoupon.name}"的${newCoupon.discount}元抵用券!`,
+                showCancel: false
+              })
+            }
+          } catch (err){console.log(err)}
+        }
+        // unshift to the front
+        couponStorage.unshift(newCoupon)
+      }
+      // save all changes
+      this.setStore('coupons', couponStorage)
+      wepy.setStorageSync('coupons', couponStorage)
     }
 
 

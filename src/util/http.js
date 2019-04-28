@@ -12,7 +12,6 @@ export default function (method, url, data, loading) {
         icon: 'warn',
         duration: 1500
       })
-      reject(res.data.data)
     }
   }
   return new Promise((resolve, reject)=>{

@@ -8,7 +8,7 @@
       <text class="c-acc">+ 增加其他票种</text>
     </view>
     <!--coupons-->
-    <view wx:if="{{couponToUse}}" class="ticket-buy-item justify-space-between">
+    <view wx:if="{{couponToUse && couponToUse.discount > 0}}" class="ticket-buy-item justify-space-between">
       <text>抵用券（{{couponToUse.name}}）</text>
       <text class="sub-total">-￥{{couponToUse.discount}}</text>
     </view>
@@ -23,7 +23,11 @@
     <text class="mr-2" :class="{warn: !phone}">手机*</text>
     <input placeholder="必填" bindinput="bindPhoneInput" type="number" maxlength="11"/>
   </view>
-  <text class="hint">购买后门票将绑定手机号</text>
+  <text class="hint">手机号将用于绑定门票和生成订单，不会有短信通知！</text>
+  <navigator url="policy" class="mx-2 mt-4">
+    <text class="d-inline">请在支付前，阅读</text>
+    <text class="d-inline c-acc">购票须知</text>
+  </navigator>
   <!--button-->
   <button class="ticket-buy-pay" open-type="getUserInfo"
           bindgetuserinfo="buy"
@@ -110,12 +114,15 @@
           })
         }).then(({orderNo, payParams})=>{
           // cleanup coupon
-          let newCoupons = this.store.coupons
+          let couponStorage = this.store.coupons
           if (this.couponToUse && this.couponToUseIndex > -1){
-            newCoupons[this.couponToUseIndex]['used'] = true
-            console.log(newCoupons)
-            this.setStore('coupons', newCoupons)
-            wepy.setStorageSync('coupons', newCoupons)
+            this.couponToUse['used'] = true
+            console.log(this.couponToUse)
+            // splice and push to then end coupon array
+            couponStorage.splice(this.couponToUseIndex, 1)
+            couponStorage.push(this.couponToUse)
+            this.setStore('coupons', couponStorage)
+            wepy.setStorageSync('coupons', couponStorage)
           }
           // issue ticket
           return http('POST', '/ticket/issue/wxpay', {
@@ -123,17 +130,16 @@
             paySign: payParams.paySign,
             openid: body.openid
           }, true)
-        }).then(ticket=>{
+        }).then(tickets=>{
           // map tickets and unshift to ticketsPool
-          console.log(ticket)
-          ticket.items = ticket.items.map((i) => {
-            i['detail'] = this.store.ticketsType[i.type]
-            return i
-          })
-          ticket.createdTime = filter.formatDate(ticket.createdTime)
-          this.$parent.globalData.ticketsPool.unshift(ticket)
+          for (let t of tickets){
+            t.items['detail'] = this.store.ticketsType[t.items.type]
+            t.createdTime = filter.formatDate(t.createdTime)
+            this.$parent.globalData.ticketsPool.unshift(t)
+          }
           this.$apply()
-          wepy.redirectTo({url:'show?index=0'})
+          this.$parent.$pages['/pages/ticket'].tab = 0
+          wepy.navigateBack({delta:2})
         }).catch(err=>{
           console.log(err)
         })
@@ -151,6 +157,7 @@
         if (this.couponToUse){
           t -= this.couponToUse['discount']
         }
+        if (t < 0) t = 0
         return t
       },
       ppl(){

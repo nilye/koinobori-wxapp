@@ -4,9 +4,9 @@
     <text class="ml-2">￥{{value.item.price}}</text>
     <view class="flex-fill"></view>
     <view class="flex-x-center">
-      <button class="counter-minus" @tap="tap({{-1}})">-</button>
+      <button class="btn-icon counter-minus" @tap="tap({{-1}})">-</button>
       <text class="counter-number">{{value.qty}}</text>
-      <button class="counter-add" @tap="tap({{1}})">+</button>
+      <button class="btn-icon counter-add" @tap="tap({{1}})">+</button>
     </view>
   </view>
 </template>
@@ -28,7 +28,7 @@
     methods = {
       tap(val){
         let newVal = this.value.qty + val
-        if (newVal >= 0 && newVal < 100){
+        if (newVal >= 0 && newVal <= 50){
           this.value.qty = newVal
         }
         this.$emit('change', this.value.qty)

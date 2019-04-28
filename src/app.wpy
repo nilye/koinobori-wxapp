@@ -29,19 +29,19 @@ export default class extends wepy.app {
     },
     window: {
       navigationBarBackgroundColor: '#FFD907',
-      navigationBarTitleText: '旗遇小卖部',
+      navigationBarTitleText: '旗遇记',
       navigationBarTextStyle: 'black',
       backgroundTextStyle: 'dark',
-      backgroundColor:'#fff',
-      backgroundColorTop:'#fff',
-      backgroundColorBottom:'#fff',
+      backgroundColor:'#f6f6f6',
+      backgroundColorTop:'#f6f6f6',
+      backgroundColorBottom:'#f6f6f6',
     },
     subPackages:[{
       root:'modules/ticket',
-      pages: ['buy', 'show', 'exchange']
+      pages: ['buy', 'show', 'exchange','policy']
     },{
       root:'modules/article',
-      pages: ['article']
+      pages: ['article','about']
     }],
   }
 
